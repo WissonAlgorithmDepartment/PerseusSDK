@@ -54,7 +54,7 @@ public:
     * @throw NetworkException if the connection is unsuccessful.
     * @throw IncompatibleVersionException if this version of `libperseus` is not supported.
     */
-    explicit PerseusRobot();
+    explicit PerseusRobot(const std::string& config_path);
 
     /**
     * Move-constructs a new PerseusRobot instance.
@@ -82,7 +82,7 @@ public:
     *
     * @return Shared pointer to the newly created PerseusRobot instance.
     */
-    static std::shared_ptr<PerseusRobot> Create(); 
+    static std::shared_ptr<PerseusRobot> Create(const std::string& config_path); 
 
     /**
     * Attempts to establish a connection with the hardware device.
@@ -147,6 +147,8 @@ public:
     */
     ServerVersion getServerVersion() const noexcept;
 
+    void SetLogTag(const std::string& tag) { log_tag_ = tag; }
+
     /// @cond DO_NOT_DOCUMENT
     PerseusRobot(const PerseusRobot&) = delete;
     PerseusRobot& operator=(const PerseusRobot&) = delete;
@@ -165,6 +167,7 @@ protected:
 private:
     std::shared_ptr<Impl> impl_;
     std::mutex control_mutex_;
+    std::string log_tag_;
 };
 
 }  // namespace wisson_SDK 

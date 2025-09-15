@@ -1,47 +1,52 @@
-/*
- * This example demonstrates how to create a custom logger for libfranka which is using the custom
- * logger to forward messages. Those messages could be logged to a file, a database, or any other
- * intended tool.
- *
- * Note: A pre-defined std::cout logger already exists in libfranka, see
- * franka/logging/cout_logging_sink.hpp.
+/**
+ * Copyright (c) 2025, WissonRobotics
+ * File: logging_example.cpp
+ * Author: Yuchen Xia (xiayuchen66@gmail.com)
+ * Version 1.0
+ * Date: 2025-09-15
+ * Brief:
  */
 
-#include <iostream>
+//=== Standard library headers ===//
+#include <chrono>        
+#include <memory>        
+#include <pthread.h>
+#include <thread>   
+#include <filesystem>
 
-// #include <franka/logging/logger.hpp>
-// #include <franka/logging/logging_sink_interface.hpp>
+//=== Third-party library headers ===//
+#include "perseuslib/perseus_robot.h"
+#include "logging/perseus_log.h"
 
-// class ExampleLogger : public franka::LoggingSinkInterface {
-//  public:
-//   ~ExampleLogger() override = default;
+#include "version.h"
 
-//   auto getName() const -> std::string override { return name_; }
 
-//   auto logInfo(const std::string& message) -> void override {
-//     std::cout << "INFO: " << message << std::endl;
-//   }
+int main(int argc, char** argv) 
+{
+  // Set main thread name
+  pthread_setname_np(pthread_self(), "Demo_Logging");
 
-//   auto logWarn(const std::string& message) -> void override {
-//     std::cout << "WARNING: " << message << std::endl;
-//   }
+  // Log initialization
+  wisson_SDK::logging::LoggerManager::InitLogging();
+    
+  SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+  SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=- New Session Started -=-=-=-=-=-=-=-=-=-=-=-=");
+  SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+  SPDLOG_INFO("=-=-=-=-=-=-=-=-=- Perseus-SDK : V{} --=-=-=-=-=-=-=-=-=-=", PERSEUSSDK_VERSION);
+  SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+  SPDLOG_INFO("                                                                 ");
+  
+  const std::string example_tag = "Demo-Logging";
+  SPDLOG_WARN("[{}] This is a warning message.", example_tag);
+  SPDLOG_ERROR("[{}] This is a error message.", example_tag);
 
-//   auto logError(const std::string& message) -> void override {
-//     std::cout << "ERROR: " << message << std::endl;
-//   }
+  /*********************************  PerseusRobot-SDK init begin  *********************************/
+  std::filesystem::path config_path = std::filesystem::path(CONFIG_PATH) / "config.yaml"; 
+  auto robot = wisson_SDK::PerseusRobot::Create(config_path);
 
-//  private:
-//   std::string name_ = "ExampleLogger";
-// };
-
-int main() {
-  // auto example_logger = std::make_shared<ExampleLogger>();
-  // franka::logging::addLogger(example_logger);
-
-  // // libfranka will internally use these log lines to forward messages to the custom logger.
-  // franka::logging::logInfo("This is an info message.");
-  // franka::logging::logWarn("This is a warning message.");
-  // franka::logging::logError("This is an error message.");
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  auto state = robot->ReadOnce(); 
+  SPDLOG_INFO("[{}] Current pressure: {}", example_tag, fmt::join(state->pressure, ", "));
 
   return 0;
 }

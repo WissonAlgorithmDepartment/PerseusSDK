@@ -1,0 +1,52 @@
+###############################################################################
+#                              DEVICE CONFIG                                  #
+###############################################################################
+#
+#  Description : Configuration file for PerseusSDK.
+#  Created     : 2025-09-03
+#  Author      : [Yuchen Xia]
+#  Version     : 1.0
+#
+###############################################################################
+
+
+################################################################
+#                      RobotSystem                             #
+################################################################
+RobotSystem:
+  Log_level: info                   # [info] or [debug] or [trace]
+### RobotSystem
+
+
+# ==============================================================
+# ⚠️  WARNING
+# The following parameters are hardware connected.
+# Do NOT modify them manually, otherwise the robot
+# may fail to communicate or behave unexpectedly.
+# ==============================================================
+################################################################
+#                      TCP Network                             #
+################################################################
+Network:
+  State-Client:
+    Name: "State_Client"
+    Address: 127.0.0.1
+    Port: 6080
+    Timeout: 1000                      # Unit: ms 
+    Keepalive:
+      enable: True
+      idle: 1
+      interval: 3                      # Unit: s
+      count: 1
+
+  Command-Client:
+    Name: "Cmd_Client"
+    Address: 127.0.0.1
+    Port: 6081
+    Timeout: 1000                      # Unit: ms                             
+    Keepalive:
+      enable: True
+      idle: 1
+      interval: 3                      # Unit: s
+      count: 1
+### TCP Network 

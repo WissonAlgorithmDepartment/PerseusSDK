@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.11...3.26)
+cmake_policy(SET CMP0144 NEW)  
 
 # =======================================================================================
 #                                    Utils
@@ -26,7 +27,7 @@ endif()
 # =======================================================================================
 #                                 Project Info
 # =======================================================================================
-project (perseuslib_examples 
+project (perseus_sdk_demo
   LANGUAGES CXX
   DESCRIPTION "Perseus Library Examples"
 )
@@ -36,7 +37,7 @@ perseus_print("-----------------------------------------------------------------
 perseus_print("    Building [Wisson-${PROJECT_TAG}] ${PROJECT_NAME}")
 perseus_print("----------------------------------------------------------------------")
 
-set(FULL_TAG "${PROJECT_TAG}-${PROJECT_NAME}")
+set(FULL_TAG "${PROJECT_TAG}|${PROJECT_NAME}")
 
 
 
@@ -83,6 +84,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
 # =======================================================================================
+#                               Build Options
+# =======================================================================================
+option(PERSEUS_BOOST_USE_STATIC_LIBS "Link Boost statically" ON)
+option(PERSEUS_BOOST_USE_STATIC_RUNTIME "Use static runtime (MSVC /MT)" OFF)
+
+set(PERSEUS_SPDLOG_ACTIVE_LEVEL "SPDLOG_LEVEL_DEBUG" CACHE STRING "spdlog active level")
+
+
+
+# =======================================================================================
 #                              Dependencies
 # =======================================================================================
 # 定义依赖项检查函数
@@ -110,7 +121,7 @@ find_package(PkgConfig REQUIRED)
 check_required_dependency(PkgConfig)
 
 # jsoncpp
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/jsoncpp/install")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/3rd_party/jsoncpp/install")
 find_package(jsoncpp CONFIG REQUIRED)
 check_required_dependency(jsoncpp)
 
@@ -128,7 +139,7 @@ if (TARGET JsonCpp::JsonCpp)
   
   # 如果仍然没获取到，手动设置路径
   if(NOT jsoncpp_INCLUDE_DIR)
-    set(jsoncpp_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/jsoncpp/install/include")
+    set(jsoncpp_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/3rd_party/jsoncpp/install/include")
   endif()
   
 elseif (DEFINED JSONCPP_INCLUDE_DIRS)
@@ -139,7 +150,7 @@ else()
 endif()
 
 # yaml-cpp
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/yaml-cpp/install")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/3rd_party/yaml-cpp/install")
 find_package(yaml-cpp REQUIRED)
 check_required_dependency(yaml-cpp)
 get_target_property(yamlcpp_INCLUDE_DIR yaml-cpp::yaml-cpp INTERFACE_INCLUDE_DIRECTORIES)
@@ -150,13 +161,31 @@ find_package(Threads REQUIRED)
 check_required_dependency(Threads)
 
 # spdlog
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog-1.12.0/install")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/3rd_party/spdlog-1.12.0/install")
 find_package(spdlog REQUIRED)
 check_required_dependency(spdlog)
 
+# Boost.System
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+set(Boost_NO_BOOST_CMAKE ON)
+
+set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/3rd_party/boost")
+set(BOOST_INCLUDEDIR "${BOOST_ROOT}/include")
+set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
+set(Boost_NO_SYSTEM_PATHS ON)
+
+set(BOOST_COMPONENTS
+  system
+)
+
+find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+check_required_dependency(Boost)
+
 # 检查所有必需依赖是否满足
 set(ALL_REQUIRED_DEPS_FOUND TRUE)
-if (NOT Threads_FOUND OR NOT spdlog_FOUND)
+if (NOT Boost_FOUND OR NOT Threads_FOUND OR NOT spdlog_FOUND)
   set(ALL_REQUIRED_DEPS_FOUND FALSE)
 endif ()
 
@@ -175,8 +204,13 @@ endif ()
 link_directories(${CMAKE_SOURCE_DIR}/perseus_lib/lib/${TOOLCHAIN_NAME})
 link_libraries(${CMAKE_SOURCE_DIR}/perseus_lib/lib/${TOOLCHAIN_NAME}/libperseuslib.a -lstdc++)
 
+set(CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+add_definitions(-DCONFIG_PATH=\"${CONFIG_PATH}\")
+
 set(EXAMPLES
   basic_control
+  stack_trace
+  logging_example
 )
 
 set(EXAMPLE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -195,16 +229,47 @@ foreach(example ${EXAMPLES})
     spdlog::spdlog
     JsonCpp::JsonCpp
     yaml-cpp::yaml-cpp
-
-    dw elf
   )
+  
+  target_compile_definitions(${example} PRIVATE SPDLOG_ACTIVE_LEVEL=${PERSEUS_SPDLOG_ACTIVE_LEVEL})
 endforeach()
+
+target_link_libraries(stack_trace PRIVATE dw elf)
 
 include(GNUInstallDirs)
 install(TARGETS ${EXAMPLES}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+
+
+# =======================================================================================
+#                         Configure Build Log Summary
+# =======================================================================================
+perseus_newline()
+perseus_print("[${FULL_TAG}] Configuration Log Summary")
+perseus_print_fixed_header("${PROJECT_NAME} Configure Summary")
+perseus_info("Project                   : " "${PROJECT_NAME}")
+perseus_info("Version                   : " "${PROJECT_VERSION}")
+perseus_info("Build Type                : " "${CMAKE_BUILD_TYPE}")
+perseus_info("C++ Compiler              : " "${CMAKE_CXX_COMPILER} (ID: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
+perseus_info("CXX Standard              : " "${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED}, ext=${CMAKE_CXX_EXTENSIONS})")
+perseus_info("Generator                 : " "${CMAKE_GENERATOR}")
+perseus_info("System                    : " "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
+perseus_info("Install Prefix            : " "${CMAKE_INSTALL_PREFIX}")
+perseus_info("Config Path               : " "${CONFIG_PATH}")
+
+perseus_print_fixed_header("${PROJECT_NAME} Dependencies Summary")
+perseus_info("jsoncpp Include           : " "${jsoncpp_INCLUDE_DIR}")
+perseus_info("yaml-cpp Include          : " "${yamlcpp_INCLUDE_DIR}")
+perseus_info("Boost Static Libs         : " "${Boost_USE_STATIC_LIBS}")
+perseus_info("Boost Libs                : " "${Boost_LIBRARIES}")
+perseus_info("Boost Include             : " "${Boost_INCLUDE_DIRS}")
+perseus_info("Threads                   : " "${CMAKE_THREAD_LIBS_INIT}")
+perseus_info("spdlog DIR                : " "${spdlog_DIR}")
+perseus_info("spdlog Level              : " "${PERSEUS_SPDLOG_ACTIVE_LEVEL}")
+perseus_print_fixed_header("")
 
 perseus_success("Successfully finished ${PROJECT_NAME} configuration!")
 if(IS_TOP_LEVEL_PROJECT)

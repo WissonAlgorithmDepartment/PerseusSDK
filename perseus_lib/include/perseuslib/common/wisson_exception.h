@@ -24,6 +24,10 @@ struct Exception : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
+struct ConstructorException : public Exception {
+  using Exception::Exception;
+};
+
 /**
  * NetworkException is thrown if a connection to the robot cannot be established, or when a timeout
  * occurs.

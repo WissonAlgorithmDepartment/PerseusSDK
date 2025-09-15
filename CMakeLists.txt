@@ -56,6 +56,7 @@ perseus_print("-----------------------------------------------------------------
 set(FULL_TAG "${PROJECT_TAG}|${PROJECT_NAME}")
 
 
+
 # =======================================================================================
 #                               Check System Platform
 # =======================================================================================
@@ -91,6 +92,8 @@ option(PERSEUSSDK_BUILD_EXAMPLES "Build example code" ON)
 # =======================================================================================
 #                               Examples & Tests
 # =======================================================================================
+perseus_newline()
+perseus_newline()
 if (PERSEUSSDK_BUILD_EXAMPLES)
   perseus_print("[${FULL_TAG}] Building examples")
   add_subdirectory(examples/platform/linux)
@@ -103,16 +106,9 @@ endif ()
 # =======================================================================================
 #                         Configure Build Log Summary
 # =======================================================================================
-perseus_print("[${FULL_TAG}] Configuration Log Summary")
 perseus_print_fixed_header("${PROJECT_NAME} Configure Summary")
 perseus_info("Project                   : " "${PROJECT_NAME}")
 perseus_info("Version                   : " "${PROJECT_VERSION}")
-perseus_info("Build Type                : " "${CMAKE_BUILD_TYPE}")
-perseus_info("C++ Compiler              : " "${CMAKE_CXX_COMPILER} (ID: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
-perseus_info("CXX Standard              : " "${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED}, ext=${CMAKE_CXX_EXTENSIONS})")
-perseus_info("Generator                 : " "${CMAKE_GENERATOR}")
-perseus_info("System                    : " "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
-perseus_info("Install Prefix            : " "${CMAKE_INSTALL_PREFIX}")
 
 perseus_print_fixed_header("${PROJECT_NAME} Build Options Summary")
 perseus_info("Build Examples            : " "${PERSEUSSDK_BUILD_EXAMPLES}")
