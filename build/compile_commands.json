@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/rpdzkj/perseus_ws/Perseus_SDK/build/examples/platform/linux",
+  "command": "/usr/bin/c++ -DEXAMPLE_PATH_STR=\\\"/home/rpdzkj/perseus_ws/Perseus_SDK/examples/platform/linux\\\" -DPLATFORM_ARCH_AARCH64=1 -DSPDLOG_COMPILED_LIB -DYAML_CPP_STATIC_DEFINE -I/home/rpdzkj/perseus_ws/Perseus_SDK/perseus_lib/include -I/home/rpdzkj/perseus_ws/Perseus_SDK/examples/platform/linux/include -lstdc++fs -std=c++2a -g -std=c++20 -fPIE   -Wall -g -pthread -o CMakeFiles/basic_control.dir/basic_control.cpp.o -c /home/rpdzkj/perseus_ws/Perseus_SDK/examples/platform/linux/basic_control.cpp",
+  "file": "/home/rpdzkj/perseus_ws/Perseus_SDK/examples/platform/linux/basic_control.cpp",
+  "output": "examples/platform/linux/CMakeFiles/basic_control.dir/basic_control.cpp.o"
+}
+]

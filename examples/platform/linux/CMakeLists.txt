@@ -1,0 +1,214 @@
+cmake_minimum_required(VERSION 3.11...3.26)
+
+# =======================================================================================
+#                                    Utils
+# =======================================================================================
+# 可选颜色输出
+set(ENABLE_COLOR_OUTPUT ON)
+include(${CMAKE_SOURCE_DIR}/cmake/log.cmake)
+
+set(IS_TOP_LEVEL_PROJECT FALSE)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(IS_TOP_LEVEL_PROJECT TRUE)
+  set(PROJECT_TAG "Top")
+else()
+  set(PROJECT_TAG "Sub")
+endif()
+
+if(IS_TOP_LEVEL_PROJECT)
+  perseus_print_top_separator()
+else()
+  perseus_print_sub_separator_start() 
+endif()
+
+
+
+# =======================================================================================
+#                                 Project Info
+# =======================================================================================
+project (perseuslib_examples 
+  LANGUAGES CXX
+  DESCRIPTION "Perseus Library Examples"
+)
+
+perseus_print("[${PROJECT_TAG}] Starting ${PROJECT_NAME} configuration...")
+perseus_print("----------------------------------------------------------------------")
+perseus_print("    Building [Wisson-${PROJECT_TAG}] ${PROJECT_NAME}")
+perseus_print("----------------------------------------------------------------------")
+
+set(FULL_TAG "${PROJECT_TAG}-${PROJECT_NAME}")
+
+
+
+# =======================================================================================
+#                               Check System Platform
+# =======================================================================================
+if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+  set(TOOLCHAIN_NAME aarch64-linux-gnu-gcc)
+  add_definitions(-DPLATFORM_ARCH_AARCH64=1)
+else ()
+  perseus_error("FATAL: Unsupported platform detected!\n"
+                "Only Linux-aarch64 is currently supported.\n"
+                "Please check your system architecture.")
+endif ()
+
+
+
+# =======================================================================================
+#                          Global configs (safe defaults)
+# =======================================================================================
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CPP_COMPILER g++)
+set (CMAKE_CXX_FLAGS "-lstdc++fs -std=c++2a")
+add_definitions("-Wall -g")
+set(CMAKE_C_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif ()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(PERSEUS_VERBOSE_MAKEFILE "Enable verbose makefile output" OFF)
+if (PERSEUS_VERBOSE_MAKEFILE)
+  set(CMAKE_VERBOSE_MAKEFILE ON)
+endif ()
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
+
+# =======================================================================================
+#                              Dependencies
+# =======================================================================================
+# 定义依赖项检查函数
+function(check_required_dependency DEPENDENCY_NAME)
+  if (${DEPENDENCY_NAME}_FOUND)
+    perseus_success("[${FULL_TAG}] Found ${DEPENDENCY_NAME}")
+  else()
+    perseus_warn("[${FULL_TAG}] Could NOT find ${DEPENDENCY_NAME} - some features may be disabled")
+  endif ()
+endfunction()
+
+function(check_optional_dependency DEPENDENCY_NAME)
+  if (${DEPENDENCY_NAME}_FOUND)
+    perseus_print("[${FULL_TAG}] Found optional ${DEPENDENCY_NAME}")
+  else()
+    perseus_warn("[${FULL_TAG}] Optional ${DEPENDENCY_NAME} not found - skipping")
+  endif ()
+endfunction()
+
+# 开始依赖项检查
+perseus_print("[${FULL_TAG}] Checking for required dependencies...")
+
+# PkgConfig
+find_package(PkgConfig REQUIRED)
+check_required_dependency(PkgConfig)
+
+# jsoncpp
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/jsoncpp/install")
+find_package(jsoncpp CONFIG REQUIRED)
+check_required_dependency(jsoncpp)
+
+if (TARGET JsonCpp::JsonCpp)  
+  # 方法1：直接使用目标属性
+  set(jsoncpp_LIBRARIES JsonCpp::JsonCpp)
+  
+  # 方法2：尝试获取包含目录的不同方式
+  get_target_property(jsoncpp_INCLUDE_DIR JsonCpp::JsonCpp INTERFACE_INCLUDE_DIRECTORIES)
+  
+  # 如果上面没获取到，尝试其他属性名
+  if(NOT jsoncpp_INCLUDE_DIR)
+    get_target_property(jsoncpp_INCLUDE_DIR JsonCpp::JsonCpp INCLUDE_DIRECTORIES)
+  endif()
+  
+  # 如果仍然没获取到，手动设置路径
+  if(NOT jsoncpp_INCLUDE_DIR)
+    set(jsoncpp_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/jsoncpp/install/include")
+  endif()
+  
+elseif (DEFINED JSONCPP_INCLUDE_DIRS)
+  set(jsoncpp_INCLUDE_DIR ${JSONCPP_INCLUDE_DIRS})
+  set(jsoncpp_LIBRARIES ${JSONCPP_LIBRARIES})
+else()
+  perseus_error("[${FULL_TAG}] Could not determine jsoncpp include directory")
+endif()
+
+# yaml-cpp
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/yaml-cpp/install")
+find_package(yaml-cpp REQUIRED)
+check_required_dependency(yaml-cpp)
+get_target_property(yamlcpp_INCLUDE_DIR yaml-cpp::yaml-cpp INTERFACE_INCLUDE_DIRECTORIES)
+
+# Threads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+check_required_dependency(Threads)
+
+# spdlog
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog-1.12.0/install")
+find_package(spdlog REQUIRED)
+check_required_dependency(spdlog)
+
+# 检查所有必需依赖是否满足
+set(ALL_REQUIRED_DEPS_FOUND TRUE)
+if (NOT Threads_FOUND OR NOT spdlog_FOUND)
+  set(ALL_REQUIRED_DEPS_FOUND FALSE)
+endif ()
+
+# 输出总结信息
+if (ALL_REQUIRED_DEPS_FOUND)
+  perseus_print("[${FULL_TAG}] All required dependencies are satisfied!")
+else()
+  perseus_error("[${FULL_TAG}] Some required dependencies are missing. Please install them and reconfigure.")
+endif ()
+
+
+
+# =======================================================================================
+#                                    Target
+# =======================================================================================
+link_directories(${CMAKE_SOURCE_DIR}/perseus_lib/lib/${TOOLCHAIN_NAME})
+link_libraries(${CMAKE_SOURCE_DIR}/perseus_lib/lib/${TOOLCHAIN_NAME}/libperseuslib.a -lstdc++)
+
+set(EXAMPLES
+  basic_control
+)
+
+set(EXAMPLE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+add_definitions(-DEXAMPLE_PATH_STR="${EXAMPLE_PATH}")
+
+foreach(example ${EXAMPLES})
+  add_executable(${example} ${example}.cpp)
+  target_include_directories(${example} PUBLIC
+    ${CMAKE_SOURCE_DIR}/perseus_lib/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  )
+  target_link_libraries(${example} PRIVATE 
+    perseuslib 
+    Threads::Threads
+    spdlog::spdlog
+    JsonCpp::JsonCpp
+    yaml-cpp::yaml-cpp
+
+    dw elf
+  )
+endforeach()
+
+include(GNUInstallDirs)
+install(TARGETS ${EXAMPLES}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+perseus_success("Successfully finished ${PROJECT_NAME} configuration!")
+if(IS_TOP_LEVEL_PROJECT)
+  perseus_print_top_separator()
+else()
+  perseus_print_sub_separator()
+endif()
