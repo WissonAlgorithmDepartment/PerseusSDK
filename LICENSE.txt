@@ -1,0 +1,42 @@
+The following portions of the Wisson’s PerseusSDK (“Software” referred to in the terms below) are made available to you under the terms of the MIT License. 
+A copy of the MIT license is available at https://opensource.org/licenses/MIT.
+
+.
+├── 3rd_party
+│   ├── boost / ...
+│   ├── jsoncpp / ...
+│   ├── spdlog-1.12.0 / ...
+│   └── yaml-cpp / ...
+├── cmake
+│   ├── log.cmake
+│   └── utils.cmake
+├── perseus_lib
+│   ├── include
+│   |   ├── logging
+│   |   |   ├── backward.hpp
+│   |   |   ├── log_common.hpp
+│   |   |   └── perseus_log.h
+|   |   ├── perseuslib
+│   |   |   ├── common
+|   |   |   │   ├── math_common.hpp
+|   |   |   │   ├── robot_state.h
+|   |   |   |   └── wisson_exception.h
+│   |   |   ├── controller
+|   |   |   |   └── controller.h
+│   |   |   ├── perseus_robot.h
+|   |   |   └── version.h
+|   |   └── version.h
+│   └── lib
+│       └── aarch64-linux-gnu-gcc
+│           └── perseus_log.h
+├── examples
+│   └── platform
+│       └── linux
+│           ├── CMakeLists.txt
+│           ├── basic_control.cpp
+│           ├── config.yaml
+│           ├── logging_example.cpp
+│           └── stack_trace.cpp
+├── CMakeLists.txt
+├── LICENSE.txt
+└── README.md
