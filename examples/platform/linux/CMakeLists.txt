@@ -211,6 +211,7 @@ set(EXAMPLES
   basic_control
   stack_trace
   logging_example
+  path_control
 )
 
 set(EXAMPLE_PATH ${CMAKE_CURRENT_SOURCE_DIR})

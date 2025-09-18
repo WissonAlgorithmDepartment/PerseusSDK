@@ -7,167 +7,135 @@
  * @date: 2025-09-01
  * @author: Yuchen Xia (xiayuchen66@gmail.com)
  * 
- * @brief Contains the perseuslib::PerseusRobot type.
+ * @brief Defines the PerseusRobot class for controlling a daularm robot via SDK network.
+ *
+ * This class provides thread-safe access to robot state, control interface, and SDK network connection.
  */
 #pragma once
 
 #include <memory>
 #include <mutex>
+#include <string>
+#include <string_view>
 
-#include "perseuslib/common/robot_state.h"
+#include "perseuslib/common/robot_state.hpp"
 #include "perseuslib/controller/controller.h"
 
 
 namespace wisson_SDK {
 
 /**
- * Maintains a sdk_network connection to the daularm-robot, provides the current robot state, gives access to
- * the model library and allows to control the robot.
+ * @class PerseusRobot
+ * @brief Provides high-level control interface to a daularm-robot via SDK network.
  *
- * @note
- * The members of this class are threadsafe.
+ * The class maintains a network connection, provides current robot state, and allows motion control.
+ * All public members are thread-safe.
  *
  * @anchor o-frame
  * @par Base frame O
- * The base frame is located at the center of the robot's base. The z-axis is established as the 
- * axis orthogonal to the horizontal plane and directed upwards.
- *
+ * Located at the center of the robot's base. The z-axis points upwards, orthogonal to the horizontal plane.
  *
  * @anchor ee-frame
- * @par end effector frame EE
- * By default, the end effector frame EE is the same as the nominal end effector frame NE
- * (i.e. the transformation between NE and EE is the identity transformation). It may be used to set
- * end effector frames which are changed more frequently (such as a tool that is grasped with the
- * end effector).
+ * @par End effector frame EE
+ * By default, EE coincides with the nominal end effector frame NE (identity transformation). 
+ * It can be customized for tools or attachments frequently changed during operation.
  */
 class PerseusRobot : public std::enable_shared_from_this<PerseusRobot> 
 {
 public:
-    /**
-    * Version of the robot server.
-    */
-    using ServerVersion = uint32_t;
+    using ServerVersion = uint32_t; ///< Type for representing robot server software version
 
     /**
-    * Establishes a connection with the robot.
-    *
-    * @throw NetworkException if the connection is unsuccessful.
-    * @throw IncompatibleVersionException if this version of `libperseus` is not supported.
-    */
+     * @brief Constructs a PerseusRobot instance and initializes SDK network connection.
+     * @param config_path Path to configuration file for the robot.
+     */
     explicit PerseusRobot(const std::string& config_path);
 
     /**
-    * Move-constructs a new PerseusRobot instance.
-    *
-    * @param[in] other Other PerseusRobot instance.
-    */
+     * @brief Move constructor.
+     * @param other Another PerseusRobot instance.
+     */
     PerseusRobot(PerseusRobot&& other) noexcept;
 
     /**
-    * Move-assigns this PerseusRobot from another PerseusRobot instance.
-    *
-    * @param[in] other Other PerseusRobot instance.
-    *
-    * @return PerseusRobot instance.
-    */
+     * @brief Move assignment operator.
+     * @param other Another PerseusRobot instance.
+     * @return Reference to this instance.
+     */
     PerseusRobot& operator=(PerseusRobot&& other) noexcept;
 
     /**
-    * Closes the connection.
-    */
+     * @brief Destructor closes network connection.
+     */
     virtual ~PerseusRobot() noexcept;
 
     /**
-    * Creates a new PerseusRobot instance and returns a shared pointer to it.
-    *
-    * @return Shared pointer to the newly created PerseusRobot instance.
-    */
+     * @brief Factory method to create a PerseusRobot instance.
+     * @param config_path Configuration file path.
+     * @return Shared pointer to the new PerseusRobot instance.
+     */
     static std::shared_ptr<PerseusRobot> Create(const std::string& config_path); 
 
     /**
-    * Attempts to establish a connection with the hardware device.
-    *
-    * @return true : Hardware connection succeeded.
-    * @return false: Hardware connection failed.
-    */
+     * @brief Attempts to establish a hardware connection via SDK network.
+     * @return true if connection succeeds, false otherwise.
+     * @throw NetworkException if connection fails.
+     */
     bool HardwareConnect();
 
-    /**
-    * Stops all currently running motions.
-    *
-    * If a control or motion generator loop is running in another thread, it will be preempted
-    * with a perseus::ControlException.
-    *
-    * @throw CommandException if the Control reports an error.
-    * @throw NetworkException if the connection is lost, e.g. after a timeout.
-    */
-    void Stop();
-
-    void Control(const ControllerMode& controller_mode, std::unique_ptr<RobotCommand> cmd);
-
     // /**
-    // * Starts a control loop for sending joint positions.
+    // * Stops all currently running motions.
     // *
-    // * Sets realtime priority for the current thread.
-    // * Cannot be executed while another control or motion generator loop is active.
+    // * If a control or motion generator loop is running in another thread, it will be preempted
+    // * with a perseus::ControlException.
     // *
-    // * @param[in] control_callback Callback function providing joint-level torque commands.
-    // * See @ref callback-docs "here" for more details.
-    // *
-    // * @throw ControlException if an error related to torque control or motion generation occurred.
-    // * @throw InvalidOperationException if a conflicting operation is already running.
+    // * @throw CommandException if the Control reports an error.
     // * @throw NetworkException if the connection is lost, e.g. after a timeout.
-    // * @throw RealtimeException if realtime priority cannot be set for the current thread.
-    // * @throw std::invalid_argument if joint-level torque or joint position commands are NaN or
-    // * infinity.
-    // *
-    // * @see PerseusRobot::PerseusRobot to change behavior if realtime priority cannot be set.
     // */
-    // void control(std::function<void(std::shared_ptr<PerseusRobot>)> control_callback, 
-    //              const std::array<double,JOINT_NUM> &desired_joint, double timeout = 30);
+    // void Stop();
 
     /**
-    * Waits for a robot state update and returns it.
-    *
-    * Cannot be executed while a control or motion generator loop is running.
-    *
-    * @return Current daularm-robot state.
-    *
-    * @throw InvalidOperationException if a conflicting operation is already running.
-    * @throw NetworkException if the connection is lost, e.g. after a timeout.
-    *
-    * @see PerseusRobot::read for a way to repeatedly receive the robot state.
-    */
-    virtual std::shared_ptr<RobotState> ReadOnce();
+     * @brief Sends a motion command to the robot.
+     * @param controller_mode Controller mode (joint/task/etc.)
+     * @param cmd RobotCommand object containing target motion.
+     */
+    void Control(const control::ControllerMode& controller_mode, std::shared_ptr<control::RobotCommand> cmd);
 
     /**
-    * Returns the software version reported by the connected robot-server.
-    *
-    * @return Software version of the connected robot-server.
-    */
-    ServerVersion getServerVersion() const noexcept;
+     * @brief Reads a single robot state update.
+     * @return Shared pointer to current RobotState.
+     */
+    [[nodiscard]] virtual std::shared_ptr<RobotState> ReadOnce();
 
+    /**
+     * @brief Returns the connected robot server software version.
+     * @return ServerVersion value.
+     */
+    [[nodiscard]] ServerVersion getServerVersion() const noexcept;
+
+    /**
+     * @brief Sets a custom log tag for logging.
+     * @param tag Log tag string.
+     */
     void SetLogTag(const std::string& tag) { log_tag_ = tag; }
 
-    /// @cond DO_NOT_DOCUMENT
+    /// Disable copy constructor and copy assignment
     PerseusRobot(const PerseusRobot&) = delete;
     PerseusRobot& operator=(const PerseusRobot&) = delete;
-    /// @endcond
 
-    class Impl;
+    class Impl; ///< Forward declaration for PImpl pattern
 
 protected:
     /**
-    * Constructs a new PerseusRobot given a PerseusRobot::Impl. This enables unittests with PerseusRobot::Impl-Mocks.
-    *
-    * @param robot_impl PerseusRobot::Impl to use
-    */
+     * @brief Protected constructor used for unit testing with Impl mocks.
+     * @param robot_impl Shared pointer to Impl instance.
+     */
     PerseusRobot(std::shared_ptr<Impl> robot_impl);
 
 private:
-    std::shared_ptr<Impl> impl_;
-    std::mutex control_mutex_;
-    std::string log_tag_;
+    std::shared_ptr<Impl> impl_;       ///< Implementation detail (PImpl)
+    mutable std::mutex control_mutex_; ///< Mutex protecting control commands
+    std::string log_tag_;              ///< Custom tag used in logging
 };
 
 }  // namespace wisson_SDK 

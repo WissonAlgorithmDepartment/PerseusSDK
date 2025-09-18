@@ -3,230 +3,230 @@
  * 
  * @copyright (c) 2025, WissonRobotics
  * 
- * @version 1.0
+ * @version 1.1
  * @date: 2025-09-02
  * @author: Yuchen Xia (xiayuchen66@gmail.com)
  * 
- * @brief Contains the perseuslib::PerseusRobot type.
+ * @brief Defines the Controller class and related enums for PerseusRobot.
+ *
+ * This header contains:
+ *  - ControlSpace / ControlType enums
+ *  - ControllerMode struct
+ *  - Controller class interface
+ *
+ * @note Uses C++20 features like constexpr, [[nodiscard]], defaulted comparison operators.
  */
 #pragma once
 
 #include <memory>
-#include <chrono>
 #include <functional>
+#include <string_view>
+#include <string>
+#include <atomic>
+#include <chrono>
 
-#include "perseuslib/common/robot_state.h"
+#include "perseuslib/common/robot_state.hpp"
+#include "perseuslib/common/wisson_exception.hpp"
+#include "robot_command.hpp"
 
 
 namespace wisson_SDK {
-
-inline std::chrono::_V2::steady_clock::time_point TIC(){
-  return std::chrono::steady_clock::now();
-}
-inline double TOC(std::chrono::_V2::steady_clock::time_point start_time_point){
-  return (std::chrono::duration_cast<std::chrono::duration<double>>(
-              std::chrono::steady_clock::now() - start_time_point)).count();
+  class TcpClient;
+  class SDKNetwork;
 }
 
+namespace wisson_SDK::control {
+
 // -----------------------------------------------------------------------------------
-//                              Struct Definition                             
+//                              Enum Definitions                            
 // -----------------------------------------------------------------------------------
-enum class ControlSpace 
+
+/**
+ * @brief Defines the space in which robot control is applied.
+ */
+enum class ControlSpace : uint8_t 
 {
-  kJoint,     
-  // kCartesian,  
-  // kTask, 
-  // kNullSpace, 
-  // kUserDefined
+  kJoint,       ///< Joint space control
+  kCartesian,   ///< Cartesian space control
+  kTask,        ///< Task space control
+  kNullSpace,   ///< Null-space control
+  kUserDefined, ///< Custom control space
+  kUnknown      ///< Unknown/undefined control space
 };
 
-enum class ControlType 
+
+/**
+ * @brief Defines the type of control applied to the robot.
+ */
+enum class ControlType : uint8_t 
 {
-  kPosition,      
-  // kVelocity,      
-  // kTorque,        
-  // kImpedance,     
-  // kAdmittance,
-  // kExtern     
+  kPosition,   ///< Position control
+  kVelocity,   ///< Velocity control
+  kTorque,     ///< Torque control
+  kImpedance,  ///< Impedance control
+  kAdmittance, ///< Admittance control
+  kCommand,    ///< Command-based control
+  kExtern,     ///< External control
+  kUnknown     ///< Unknown/undefined control type 
 };
 
-struct ControllerMode 
-{
-  ControlSpace space{};
-  ControlType type{};
-
-  constexpr ControllerMode(ControlSpace s, ControlType t) : space(s), type(t) {}
-
-  static constexpr ControllerMode JointPosition() { return {ControlSpace::kJoint, ControlType::kPosition}; }
-
-  bool operator==(const ControllerMode& other) const {
-    return space == other.space && type == other.type;
-  }
-
-  bool operator!=(const ControllerMode& other) const {
-    return !(*this == other);
-  }
-};
-
-struct MotionCommand 
-{
-  std::array<double, JOINT_NUM> joint_positions{};      
-  std::array<double, JOINT_NUM> joint_velocities{};     
-  std::array<double, 16> ee_transform{};          
-  std::array<double, 6> ee_velocity{};        
-  std::array<double, 2> elbow{};                
-  bool has_elbow = false;                             
-};
-
-struct TorqueCommand  
-{
-  std::array<double, JOINT_NUM> desired_torque{};
-};
-
-enum class ResponseStatus : uint32_t
-{
-  kIdle = 0,
-  kSending,
-  kWaiting,
-  kSuccess,
-  kFail,      
-  kUserStop,      
-  kTimeout,        
-  kAbort, 
-  kRefused,    
-  kUnknown   
-};
 
 namespace detail {
 
-inline ResponseStatus ToResponseStatus(uint32_t result) 
+/**
+ * @brief Converts ControlSpace enum to string.
+ */
+[[nodiscard]] inline constexpr std::string_view ControlSpaceToString(ControlSpace cs) noexcept
 {
-  using RS = ResponseStatus;
-  return (result >= static_cast<uint32_t>(RS::kWaiting) &&
-          result <= static_cast<uint32_t>(RS::kRefused))
-              ? static_cast<RS>(result)
-              : RS::kUnknown;
-}
-
-// Check whether the state indicates the action has finished
-inline bool IsActionFinished(ResponseStatus status)
-{
-  switch (status) {
-    case ResponseStatus::kSuccess:
-    case ResponseStatus::kUserStop:
-    case ResponseStatus::kTimeout:
-    case ResponseStatus::kAbort:
-    case ResponseStatus::kFail:
-    case ResponseStatus::kRefused:
-      return true;   // These states indicate that the action has already finished
-    case ResponseStatus::kIdle:
-    case ResponseStatus::kSending:
-    case ResponseStatus::kWaiting:
-    case ResponseStatus::kUnknown:
-    default:
-      return false;  // The action has not finished yet or its status is unknown
+  switch (cs)
+  {
+    case ControlSpace::kJoint:       return "Joint";
+    case ControlSpace::kCartesian:   return "Cartesian";
+    case ControlSpace::kTask:        return "Task";
+    case ControlSpace::kNullSpace:   return "NullSpace";
+    case ControlSpace::kUserDefined: return "UserDefined";
+    case ControlSpace::kUnknown:     [[fallthrough]];
+    default:                         return "UnknownSpace";
   }
 }
 
-inline std::string RespStatusToString(ResponseStatus status)
+
+/**
+ * @brief Converts ControlType enum to string.
+ */
+[[nodiscard]] inline constexpr std::string_view ControlTypeToString(ControlType ct) noexcept
 {
-  switch (status) {
-    case ResponseStatus::kIdle:      return "Idle";
-    case ResponseStatus::kSending:   return "Sending";
-    case ResponseStatus::kWaiting:   return "Waiting";
-    case ResponseStatus::kSuccess:   return "Successful";
-    case ResponseStatus::kFail:      return "Fail";
-    case ResponseStatus::kUserStop:  return "User-Stop";
-    case ResponseStatus::kTimeout:   return "Timeout";
-    case ResponseStatus::kAbort:     return "Abort";
-    case ResponseStatus::kRefused:   return "Coomand Refused";
-    case ResponseStatus::kUnknown:   return "Unknown";
-    default:                         return "Invalid-Status";
+  switch (ct)
+  {
+    case ControlType::kPosition:   return "Position";
+    case ControlType::kVelocity:   return "Velocity";
+    case ControlType::kTorque:     return "Torque";
+    case ControlType::kImpedance:  return "Impedance";
+    case ControlType::kAdmittance: return "Admittance";
+    case ControlType::kCommand:    return "Command";
+    case ControlType::kExtern:     return "Extern";
+    case ControlType::kUnknown:    [[fallthrough]];
+    default:                       return "UnknownType"; 
   }
 }
 
 } // namespace detail
 
-struct RobotCommand 
+
+
+// -----------------------------------------------------------------------------------
+//                           ControllerMode Struct                            
+// -----------------------------------------------------------------------------------
+
+/**
+ * @brief Represents a control mode consisting of a control space and type.
+ */
+struct ControllerMode 
 {
-private:
-  // Private constructor to prevent direct instantiation from outside
-  RobotCommand() = default;
+  ControlSpace space{ControlSpace::kUnknown};
+  ControlType type{ControlType::kUnknown};
 
-public:
-  uint32_t cmd_id{0};
-  MotionCommand motion{};
-  TorqueCommand control{};
-  double timeout{30.0}; 
+  constexpr ControllerMode() = default;
+  constexpr ControllerMode(ControlSpace s, ControlType t) : space(s), type(t) {}
 
-  // Command Status
-  std::atomic<bool> finished = false;
-  ResponseStatus status = ResponseStatus::kIdle; 
+  /**
+   * @brief Factory method to create a ControllerMode.
+   */
+  static constexpr ControllerMode Create(ControlSpace s, ControlType t) { return {s, t}; }
+
+  /**
+   * @brief Common predefined modes
+   */
+  static constexpr ControllerMode JointPosition() { return {ControlSpace::kJoint, ControlType::kPosition}; }
+  static constexpr ControllerMode TaskCommand()   { return {ControlSpace::kTask,  ControlType::kCommand}; }
+
+  constexpr bool operator==(const ControllerMode&) const = default;
+  constexpr bool is(ControlSpace s, ControlType t) const { return space == s && type == t; }
+  constexpr bool is(const ControllerMode& other) const { return *this == other; }
   
-  static std::unique_ptr<RobotCommand> JointPosition(const std::array<double, JOINT_NUM>& desired_joint,
-                                                     double timeout_s = 30.0) 
-  { 
-    std::unique_ptr<RobotCommand> cmd(new RobotCommand());
-    cmd->motion.joint_positions = desired_joint;
-    cmd->timeout = timeout_s;
-    return cmd; 
-  }
+  /**
+   * @brief Converts mode to string for logging or display.
+   */
+  [[nodiscard]] std::string ModeToString() const
+    { return std::string(detail::ControlSpaceToString(space)) + "-" + 
+             std::string(detail::ControlTypeToString(type)); }
 };
 
 
-class TcpClient;
-class SDKNetwork;
 
 // -----------------------------------------------------------------------------------
-//                           Controller Definition                             
+//                           Controller Class                            
 // -----------------------------------------------------------------------------------
+
+/**
+ * @brief Represents a robot controller which executes commands in a specific mode.
+ *
+ * Provides:
+ *  - Thread-safe command ID generation
+ *  - Network binding for SDK communication
+ *  - Callbacks for command completion/waiting
+ */
 class Controller : public std::enable_shared_from_this<Controller> 
 {
 public:
   /**
-    * @brief Construct a RobotController with a given control mode.
-    * @param mode  Control mode (joint/cartesian, position/velocity).
-    */
+   * @brief Constructs a Controller with a specified mode.
+   * @param mode  Control mode (joint/cartesian, position/velocity, etc.)
+   */
   Controller(ControllerMode mode);
 
   virtual ~Controller() noexcept = default;
 
   /**
-  * Creates a new Controller instance and returns a shared pointer to it.
-  *
-  * @return Shared pointer to the newly created Controller instance.
-  */
+   * @brief Factory method to create and return a shared pointer to a Controller.
+   */
   static std::shared_ptr<Controller> Create(ControllerMode mode); 
 
-  bool ExecuteMotion(const ControllerMode& controller_mode, std::unique_ptr<RobotCommand> cmd);
+  /**
+   * @brief Execute a robot command in a specified controller mode.
+   * @param controller_mode  Desired control mode.
+   * @param cmd              Command to execute.
+   * @return true if command started successfully.
+   */
+  bool ExecuteMotion(const ControllerMode& controller_mode, std::shared_ptr<RobotCommand> cmd);
 
+  /**
+   * @brief Set a callback for reporting command waiting time.
+   */
   void SetWaitingCallback(std::function<void(double timecost)> cb) { waiting_callback_ = std::move(cb); }
 
+  /**
+   * @brief Check if the controller is currently executing a command.
+   */
   bool IsControllerRunning() const noexcept;
 
+  /**
+   * @brief Bind the controller to a network interface for SDK communication.
+   */
   bool BindNetwork(const std::shared_ptr<SDKNetwork>& network); 
 
-  // Generate a unique incrementing command ID (thread-safe)
+  /**
+   * @brief Generate a unique incrementing command ID (thread-safe).
+   */
   static uint32_t GenerateCommandId() {
     static std::atomic<uint32_t> commandId{0};
     return ++commandId;
   }
 
 private:
-  bool StartMotion(const ControllerMode& controller_mode, std::unique_ptr<RobotCommand> cmd);
+  bool StartMotion(const ControllerMode& controller_mode, std::shared_ptr<RobotCommand> cmd);
   void FinishMotion(); 
   void SendCommand();
 
+private:
   ControllerMode mode_;
-  std::unique_ptr<RobotCommand> cmd_;
-
+  std::shared_ptr<RobotCommand> cmd_;
   std::function<RobotCommand(const RobotState&)> control_callback_{};
-
   bool running_{false};
-
   std::shared_ptr<SDKNetwork> network_;
-
   std::function<void(double timecost)> waiting_callback_;
+  std::string log_tag_;
+  std::chrono::steady_clock::time_point action_start_time_;
 };
 
-}  // namespace wisson_SDK 
+}  // namespace wisson_SDK::control 

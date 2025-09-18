@@ -7,28 +7,13 @@ A copy of the MIT license is available at https://opensource.org/licenses/MIT.
 │   ├── jsoncpp / ...
 │   ├── spdlog-1.12.0 / ...
 │   └── yaml-cpp / ...
+├── CMakeLists.txt
+├── LICENSE.txt
+├── README.md
+├── build / ...
 ├── cmake
-│   ├── log.cmake
-│   └── utils.cmake
-├── perseus_lib
-│   ├── include
-│   |   ├── logging
-│   |   |   ├── backward.hpp
-│   |   |   ├── log_common.hpp
-│   |   |   └── perseus_log.h
-|   |   ├── perseuslib
-│   |   |   ├── common
-|   |   |   │   ├── math_common.hpp
-|   |   |   │   ├── robot_state.h
-|   |   |   |   └── wisson_exception.h
-│   |   |   ├── controller
-|   |   |   |   └── controller.h
-│   |   |   ├── perseus_robot.h
-|   |   |   └── version.h
-|   |   └── version.h
-│   └── lib
-│       └── aarch64-linux-gnu-gcc
-│           └── perseus_log.h
+│   ├── log.cmake
+│   └── utils.cmake
 ├── examples
 │   └── platform
 │       └── linux
@@ -36,7 +21,26 @@ A copy of the MIT license is available at https://opensource.org/licenses/MIT.
 │           ├── basic_control.cpp
 │           ├── config.yaml
 │           ├── logging_example.cpp
+│           ├── path_control.cpp
 │           └── stack_trace.cpp
-├── CMakeLists.txt
-├── LICENSE.txt
-└── README.md
+└── perseus_lib
+    ├── include
+    │   ├── logging
+    │   │   ├── backward.hpp
+    │   │   ├── log_common.hpp
+    │   │   └── perseus_log.h
+    │   ├── perseuslib
+    │   │   ├── common
+    │   │   │   ├── math_utils.hpp
+    │   │   │   ├── robot_state.hpp
+    │   │   │   ├── timer_utils.hpp
+    │   │   │   └── wisson_exception.hpp
+    │   │   ├── controller
+    │   │   │   ├── controller.h
+    │   │   │   └── robot_command.hpp
+    │   │   ├── perseus_robot.h
+    │   │   └── version.h
+    │   └── version.h
+    └── lib
+        └── aarch64-linux-gnu-gcc
+            └── libperseuslib.a

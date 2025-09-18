@@ -23,6 +23,8 @@
 
 int main(int argc, char** argv) 
 {
+  namespace ctrl = wisson_SDK::control;
+
   // Set main thread name
   pthread_setname_np(pthread_self(), "Demo_Ctrl");
 
@@ -35,13 +37,12 @@ int main(int argc, char** argv)
   auto robot = wisson_SDK::PerseusRobot::Create(config_path);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  auto mode = ctrl::ControllerMode::JointPosition();
   std::array<double, 9> desired_joint = {0.4280, 30.0, 40.0, -1.0, 2.0, 30.0, 30.0, 30.0, 5.0};
-  wisson_SDK::ControllerMode mode = wisson_SDK::ControllerMode::JointPosition();
-  auto cmd_ptr = wisson_SDK::RobotCommand::JointPosition(desired_joint, 10.0);
-  robot->Control(mode, std::move(cmd_ptr));
+  double timeout = 5.0;
+  auto command = ctrl::MotionCommand::CreateCommand(desired_joint, timeout);
+  auto cmd = ctrl::RobotCommand::CreateCommand(command);
 
-  auto state = robot->ReadOnce(); 
-  SPDLOG_INFO("[{}] Current pressure: {}", example_tag, fmt::join(state->pressure, ", "));
-
+  robot->Control(mode, std::move(cmd));
   return 0;
 }

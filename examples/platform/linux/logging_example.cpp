@@ -27,7 +27,8 @@ int main(int argc, char** argv)
   pthread_setname_np(pthread_self(), "Demo_Logging");
 
   // Log initialization
-  wisson_SDK::logging::LoggerManager::InitLogging();
+  std::string log_path = "/home/rpdzkj/perseus_ws/libperseus/config/main.log";
+  wisson_SDK::logging::LoggerManager::InitLogging(log_path); // Custom path
     
   SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
   SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=- New Session Started -=-=-=-=-=-=-=-=-=-=-=-=");
@@ -43,6 +44,9 @@ int main(int argc, char** argv)
   /*********************************  PerseusRobot-SDK init begin  *********************************/
   std::filesystem::path config_path = std::filesystem::path(CONFIG_PATH) / "config.yaml"; 
   auto robot = wisson_SDK::PerseusRobot::Create(config_path);
+
+  auto version = robot->getServerVersion();
+  SPDLOG_INFO("[{}] Robot-Server version: {}", example_tag, version);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   auto state = robot->ReadOnce(); 

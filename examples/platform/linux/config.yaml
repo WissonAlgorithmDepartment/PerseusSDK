@@ -14,7 +14,7 @@
 #                      RobotSystem                             #
 ################################################################
 RobotSystem:
-  Log_level: info                   # [info] or [debug] or [trace]
+  Log_level: info                   # [info] or [debug]
 ### RobotSystem
 
 
@@ -28,6 +28,8 @@ RobotSystem:
 #                      TCP Network                             #
 ################################################################
 Network:
+  Network-Timeout: 30                  # Unit: s
+
   State-Client:
     Name: "State_Client"
     Address: 127.0.0.1
