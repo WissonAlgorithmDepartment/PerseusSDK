@@ -27,7 +27,7 @@ int main(int argc, char** argv)
   pthread_setname_np(pthread_self(), "Demo_Logging");
 
   // Log initialization
-  std::string log_path = "/home/rpdzkj/perseus_ws/libperseus/config/main.log";
+  std::filesystem::path log_path = std::filesystem::path(CONFIG_PATH) / "main.log"; 
   wisson_SDK::logging::LoggerManager::InitLogging(log_path); // Custom path
     
   SPDLOG_INFO("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");

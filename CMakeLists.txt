@@ -62,6 +62,7 @@ set(FULL_TAG "${PROJECT_TAG}|${PROJECT_NAME}")
 # =======================================================================================
 if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
   set(LIBRARY_PATH perseus_lib/lib/libPERSEUSSDK.a)
+#elseif (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)
 else ()
   perseus_error("FATAL: Unsupported platform detected!\n"
                 "Only Linux-aarch64 is currently supported.\n"
