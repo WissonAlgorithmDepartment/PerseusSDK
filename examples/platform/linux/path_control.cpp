@@ -40,8 +40,8 @@ int main(int argc, char** argv)
   auto mode = ctrl::ControllerMode::JointPosition();
   std::array<double, 9> joint1 = {0.4280, 30.0, 40.0, -1.0, 2.0, 30.0, 30.0, 30.0, 5.0};
   std::array<double, 9> joint2 = {0.4280, 30.0, 40.0, -1.0, 2.0, 30.0, 30.0, 0.0, 35.0};
-  double timeout1 = 5.0;
-  double timeout2 = 5.0;
+  double timeout1 = 15.0;
+  double timeout2 = 15.0;
   double total_timeout = 30.0;
   std::vector<ctrl::MotionCommand> commands = {
     ctrl::MotionCommand::CreateCommand(joint1, timeout1),

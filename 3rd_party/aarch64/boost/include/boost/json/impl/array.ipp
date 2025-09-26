@@ -40,7 +40,10 @@ allocate(
 {
     BOOST_ASSERT(capacity > 0);
     if(capacity > array::max_size())
-        detail::throw_length_error( "array too large" );
+    {
+        BOOST_STATIC_CONSTEXPR source_location loc = BOOST_CURRENT_LOCATION;
+        detail::throw_system_error( error::array_too_large, &loc );
+    }
     auto p = reinterpret_cast<
         table*>(sp->allocate(
             sizeof(table) +
@@ -98,7 +101,10 @@ revert_insert(
         return;
     }
     if(n_ > max_size() - arr_->size())
-        detail::throw_length_error( "array too large" );
+    {
+        BOOST_STATIC_CONSTEXPR source_location loc = BOOST_CURRENT_LOCATION;
+        detail::throw_system_error( error::array_too_large, &loc );
+    }
     auto t = table::allocate(
         arr_->growth(arr_->size() + n_),
             arr_->sp_);
@@ -364,6 +370,43 @@ operator=(
 
 //----------------------------------------------------------
 //
+// Element access
+//
+//----------------------------------------------------------
+
+system::result<value&>
+array::try_at(std::size_t pos) noexcept
+{
+    if(pos >= t_->size)
+    {
+        system::error_code ec;
+        BOOST_JSON_FAIL(ec, error::out_of_range);
+        return ec;
+    }
+    return (*t_)[pos];
+}
+
+system::result<value const&>
+array::try_at(std::size_t pos) const noexcept
+{
+    if(pos >= t_->size)
+    {
+        system::error_code ec;
+        BOOST_JSON_FAIL(ec, error::out_of_range);
+        return ec;
+    }
+    return (*t_)[pos];
+}
+
+value const&
+array::
+array::at(std::size_t pos, source_location const& loc) const&
+{
+    return try_at(pos).value(loc);
+}
+
+//----------------------------------------------------------
+//
 // Capacity
 //
 //----------------------------------------------------------
@@ -622,7 +665,10 @@ growth(
     std::size_t new_size) const
 {
     if(new_size > max_size())
-        detail::throw_length_error( "array too large" );
+    {
+        BOOST_STATIC_CONSTEXPR source_location loc = BOOST_CURRENT_LOCATION;
+        detail::throw_system_error( error::array_too_large, &loc );
+    }
     std::size_t const old = capacity();
     if(old > max_size() - old / 2)
         return new_size;

@@ -69,6 +69,8 @@ inline T asymptotic_bessel_y_large_x_2(T v, T x, const Policy& pol)
    BOOST_MATH_STD_USING
    // Get the phase and amplitude:
    T ampl = asymptotic_bessel_amplitude(v, x);
+   if (0 == ampl)
+      return ampl;
    T phase = asymptotic_bessel_phase_mx(v, x);
    BOOST_MATH_INSTRUMENT_VARIABLE(ampl);
    BOOST_MATH_INSTRUMENT_VARIABLE(phase);
@@ -97,6 +99,8 @@ inline T asymptotic_bessel_j_large_x_2(T v, T x, const Policy& pol)
    BOOST_MATH_STD_USING
    // Get the phase and amplitude:
    T ampl = asymptotic_bessel_amplitude(v, x);
+   if (0 == ampl) 
+      return ampl;  // shortcut.
    T phase = asymptotic_bessel_phase_mx(v, x);
    BOOST_MATH_INSTRUMENT_VARIABLE(ampl);
    BOOST_MATH_INSTRUMENT_VARIABLE(phase);
@@ -175,7 +179,7 @@ void temme_asymptotic_y_small_x(T v, T x, T* Y, T* Y1, const Policy& pol)
       p /= k - v;
       q /= k + v;
       c *= c_mult / k;
-      T c1 = pow(-x * x / 4, k) / factorial<T>(k, pol);
+      T c1 = pow(-x * x / 4, T(k)) / factorial<T>(k, pol);
       g = f + g_prefix * q;
       h = -k * g + p;
       y += c * g;

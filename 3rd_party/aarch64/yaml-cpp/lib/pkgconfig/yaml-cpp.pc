@@ -1,0 +1,11 @@
+prefix=/home/xhhhhhh/perseus_ws/libperseus/3rd_party/aarch64/yaml-cpp
+exec_prefix=${prefix}
+includedir=/home/xhhhhhh/perseus_ws/libperseus/3rd_party/aarch64/yaml-cpp/include
+libdir=/home/xhhhhhh/perseus_ws/libperseus/3rd_party/aarch64/yaml-cpp/lib
+
+Name: Yaml-cpp
+Description: A YAML parser and emitter for C++
+Version: 0.8.0
+Requires:
+Libs: -L${libdir} -lyaml-cpp
+Cflags: -I${includedir}
