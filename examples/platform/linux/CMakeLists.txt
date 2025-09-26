@@ -46,19 +46,30 @@ set(FULL_TAG "${PROJECT_TAG}|${PROJECT_NAME}")
 # =======================================================================================
 #                               Check System Platform
 # =======================================================================================
-if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
-  set(TOOLCHAIN_NAME aarch64-linux-gnu-gcc)
-  add_definitions(-DPLATFORM_ARCH_AARCH64=1)
-  set(3RD_PARTY_PATH "${CMAKE_SOURCE_DIR}/3rd_party/aarch64")
-elseif (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)
-  set(TOOLCHAIN_NAME x86_64-linux-gnu-gcc)
-  add_definitions(-DPLATFORM_ARCH_X86_64=1)
-  set(3RD_PARTY_PATH "${CMAKE_SOURCE_DIR}/3rd_party/x86_64")
-else ()
-  perseus_error("FATAL: Unsupported platform detected!\n"
-                "Only Linux-aarch64 is currently supported.\n"
-                "Please check your system architecture.")
-endif ()
+set(PLATFORM_ARM64 OFF)
+set(PLATFORM_X86_64 OFF)
+set(PLATFORM_WINDOWS OFF)
+set(3RD_PARTY_PATH "")
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set(TOOLCHAIN_NAME aarch64-linux-gnu-gcc)
+    add_definitions(-DPLATFORM_ARCH_AARCH64=1)
+    set(3RD_PARTY_PATH "${CMAKE_SOURCE_DIR}/3rd_party/aarch64")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(TOOLCHAIN_NAME x86_64-linux-gnu-gcc)
+    add_definitions(-DPLATFORM_ARCH_X86_64=1)
+    set(3RD_PARTY_PATH "${CMAKE_SOURCE_DIR}/3rd_party/x86_64")
+  else()
+    perseus_error("!!! FATAL: Unsupported Linux architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+elseif (WIN32)
+  set(PLATFORM "Windows x86_64")
+  set(PLATFORM_WINDOWS ON)
+  set(3RD_PARTY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/windows")
+else()
+  perseus_error("!!! FATAL: Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+endif()
 
 
 
@@ -68,24 +79,37 @@ endif ()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_C_COMPILER gcc)
-set(CMAKE_CPP_COMPILER g++)
-set (CMAKE_CXX_FLAGS "-lstdc++fs -std=c++2a")
-add_definitions("-Wall -g")
+
+if(NOT CMAKE_C_COMPILER)
+  set(CMAKE_C_COMPILER gcc)
+endif()
+
+if(NOT CMAKE_CXX_COMPILER)
+  set(CMAKE_CXX_COMPILER g++)
+endif()
+
+# 调试信息
 set(CMAKE_C_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
+# 开启所有警告
+add_compile_options(-Wall -Wextra -Wpedantic)
+
+# 默认构建类型
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif ()
 
+# 生成 compile_commands.json (便于 IDE/clangd)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# 可视化 verbose makefile（如需更详细编译输出可设为 ON）
 option(PERSEUS_VERBOSE_MAKEFILE "Enable verbose makefile output" OFF)
 if (PERSEUS_VERBOSE_MAKEFILE)
   set(CMAKE_VERBOSE_MAKEFILE ON)
 endif ()
 
+# 位置无关代码（对静态/动态库都安全）
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
@@ -103,6 +127,10 @@ set(PERSEUS_SPDLOG_ACTIVE_LEVEL "SPDLOG_LEVEL_DEBUG" CACHE STRING "spdlog active
 # =======================================================================================
 #                              Dependencies
 # =======================================================================================
+if(NOT 3RD_PARTY_PATH)
+  perseus_error("[${FULL_TAG}] " "3RD_PARTY_PATH is not set")
+endif()
+
 function(check_required_dependency DEPENDENCY_NAME)
   if (${DEPENDENCY_NAME}_FOUND)
     perseus_success("[${FULL_TAG}] Found ${DEPENDENCY_NAME}")
@@ -121,13 +149,9 @@ endfunction()
 
 perseus_print("[${FULL_TAG}] Checking for required dependencies...")
 
-# PkgConfig
-find_package(PkgConfig REQUIRED)
-check_required_dependency(PkgConfig)
-
 # jsoncpp
-list(APPEND CMAKE_PREFIX_PATH "${3RD_PARTY_PATH}/jsoncpp/install")
-
+list(APPEND CMAKE_PREFIX_PATH "${3RD_PARTY_PATH}/jsoncpp")
+perseus_print("[${FULL_TAG}] Added JSONCPP to CMAKE_PREFIX_PATH")
 find_package(jsoncpp CONFIG REQUIRED)
 check_required_dependency(jsoncpp)
 
@@ -137,22 +161,75 @@ if (TARGET JsonCpp::JsonCpp)
   get_target_property(jsoncpp_INCLUDE_DIR JsonCpp::JsonCpp INTERFACE_INCLUDE_DIRECTORIES)
   
   if(NOT jsoncpp_INCLUDE_DIR)
-    perseus_warn("[${FULL_TAG}] " "[JsonCpp] INTERFACE_INCLUDE_DIRECTORIES not found, using fallback path.")
-    set(jsoncpp_INCLUDE_DIR "${3RD_PARTY_PATH}/jsoncpp/install/include")
+    get_target_property(jsoncpp_INCLUDE_DIR JsonCpp::JsonCpp INCLUDE_DIRECTORIES)
   endif()
   
-elseif(DEFINED JSONCPP_INCLUDE_DIRS AND DEFINED JSONCPP_LIBRARIES)
-  set(jsoncpp_INCLUDE_DIR "${JSONCPP_INCLUDE_DIRS}")
-  set(jsoncpp_LIBRARIES "${JSONCPP_LIBRARIES}")
+  if(NOT jsoncpp_INCLUDE_DIR)
+    set(jsoncpp_INCLUDE_DIR "${3RD_PARTY_PATH}/jsoncpp/include")
+  endif()
+  
+elseif (DEFINED JSONCPP_INCLUDE_DIRS)
+  set(jsoncpp_INCLUDE_DIR ${JSONCPP_INCLUDE_DIRS})
+  set(jsoncpp_LIBRARIES ${JSONCPP_LIBRARIES})
 else()
-  perseus_error("[${FULL_TAG}] [JsonCpp] Could not determine jsoncpp include directory")
+  perseus_error("[${FULL_TAG}] Could not determine jsoncpp include directory")
 endif()
 
 # yaml-cpp
-list(APPEND CMAKE_PREFIX_PATH "${3RD_PARTY_PATH}/yaml-cpp/install")
+list(APPEND CMAKE_PREFIX_PATH "${3RD_PARTY_PATH}/yaml-cpp")
+perseus_print("[${FULL_TAG}] Added YAML-CPP to CMAKE_PREFIX_PATH")
 find_package(yaml-cpp REQUIRED)
 check_required_dependency(yaml-cpp)
 get_target_property(yamlcpp_INCLUDE_DIR yaml-cpp::yaml-cpp INTERFACE_INCLUDE_DIRECTORIES)
+
+# # Eigen3（优先 CONFIG，兼容 NO_MODULE）
+# find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+# check_required_dependency(Eigen3)
+
+# -------------------------------------------------------------
+# Boost (Cross-compile aarch64) find module for Perseus
+# Only search system library, no test compilation
+# -------------------------------------------------------------
+set(BOOST_ROOT "${3RD_PARTY_PATH}/boost")
+list(APPEND CMAKE_PREFIX_PATH "${BOOST_ROOT}")
+perseus_print("[${FULL_TAG}] Added Boost to CMAKE_PREFIX_PATH")
+
+# Disable automatic testing and system paths
+set(Boost_NO_SYSTEM_PATHS ON)
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_NO_BOOST_CMAKE ON)
+
+# Explicitly specify include and library directories
+set(Boost_INCLUDE_DIR "${BOOST_ROOT}/include")
+set(Boost_LIBRARY_DIR "${BOOST_ROOT}/lib")
+
+# Boost.System static library path
+set(Boost_SYSTEM_LIBRARY "${Boost_LIBRARY_DIR}/libboost_system.a")
+
+# Check existence
+if(NOT EXISTS "${Boost_INCLUDE_DIR}/boost/system/system_error.hpp")
+  perseus_error("[${FULL_TAG}] " "Boost include directory not found: ${Boost_INCLUDE_DIR}")
+endif()
+
+if(NOT EXISTS "${Boost_SYSTEM_LIBRARY}")
+  perseus_error("[${FULL_TAG}] " "Boost.System library not found: ${Boost_SYSTEM_LIBRARY}")
+endif()
+
+# Create IMPORTED target for Boost::system
+add_library(Boost::system STATIC IMPORTED GLOBAL)
+set_target_properties(Boost::system PROPERTIES
+  IMPORTED_LOCATION "${Boost_SYSTEM_LIBRARY}"
+  INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIR}"
+)
+
+# Mark found
+set(Boost_FOUND TRUE)
+set(Boost_INCLUDE_DIRS "${Boost_INCLUDE_DIR}")
+set(Boost_LIBRARIES "${Boost_SYSTEM_LIBRARY}")
+set(Boost_SYSTEM_LIBRARY "${Boost_SYSTEM_LIBRARY}")
+
+perseus_print("[${FULL_TAG}] Found Boost.System")
 
 # Threads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -160,31 +237,17 @@ find_package(Threads REQUIRED)
 check_required_dependency(Threads)
 
 # spdlog
-list(APPEND CMAKE_PREFIX_PATH "${3RD_PARTY_PATH}/spdlog-1.12.0/install")
+list(APPEND CMAKE_PREFIX_PATH "${3RD_PARTY_PATH}/spdlog")
+perseus_print("[${FULL_TAG}] Added SPDLOGP to CMAKE_PREFIX_PATH")
+
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use spdlog internal fmt library" FORCE)
+perseus_print("[${FULL_TAG}] SPDLOG_FMT_EXTERNAL = ${SPDLOG_FMT_EXTERNAL}")
+
 find_package(spdlog REQUIRED)
 check_required_dependency(spdlog)
 
-# Boost.System
-set(Boost_USE_STATIC_LIBS    ON)
-set(Boost_USE_MULTITHREADED  ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-set(Boost_NO_BOOST_CMAKE     ON)
-
-set(BOOST_ROOT "${3RD_PARTY_PATH}/boost")
-
-set(BOOST_INCLUDEDIR "${BOOST_ROOT}/include")
-set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
-set(Boost_NO_SYSTEM_PATHS ON)
-
-set(BOOST_COMPONENTS
-  system
-)
-
-find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-check_required_dependency(Boost)
-
 set(ALL_REQUIRED_DEPS_FOUND TRUE)
-if (NOT Boost_FOUND OR NOT Threads_FOUND OR NOT spdlog_FOUND)
+if (NOT Boost_FOUND OR NOT Threads_FOUND OR NOT spdlog_FOUND OR NOT yaml-cpp_FOUND OR NOT jsoncpp_FOUND)
   set(ALL_REQUIRED_DEPS_FOUND FALSE)
 endif ()
 
@@ -193,6 +256,7 @@ if (ALL_REQUIRED_DEPS_FOUND)
 else()
   perseus_error("[${FULL_TAG}] Some required dependencies are missing. Please install them and reconfigure.")
 endif ()
+
 
 
 
@@ -218,6 +282,7 @@ add_definitions(-DEXAMPLE_PATH_STR="${EXAMPLE_PATH}")
 foreach(example ${EXAMPLES})
   add_executable(${example} ${example}.cpp)
   target_include_directories(${example} PUBLIC
+    ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/perseus_lib/include
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

@@ -30,7 +30,7 @@
 
 // ------------------- Third-Party Library ----------------
 #include <spdlog/spdlog.h>
-#include <fmt/format.h>
+#include <spdlog/fmt/bundled/format.h>
 
 // ------------------- Local Headers ----------------------
 #include "perseuslib/common/math_utils.hpp"

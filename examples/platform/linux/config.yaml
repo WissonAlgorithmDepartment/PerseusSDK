@@ -32,7 +32,7 @@ Network:
 
   State-Client:
     Name: "State_Client"
-    Address: 127.0.0.1
+    Address: 192.168.1.110
     Port: 6080
     Timeout: 1000                      # Unit: ms 
     Keepalive:
@@ -43,7 +43,7 @@ Network:
 
   Command-Client:
     Name: "Cmd_Client"
-    Address: 127.0.0.1
+    Address: 192.168.1.110
     Port: 6081
     Timeout: 1000                      # Unit: ms                             
     Keepalive:
