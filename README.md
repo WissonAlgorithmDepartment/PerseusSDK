@@ -1,6 +1,6 @@
 # Wisson Perseus-SDK (PSDK)
 
-![](https://img.shields.io/badge/version-V1.0.2-blue.svg)
+![](https://img.shields.io/badge/version-V1.1.0-blue.svg)
 ![](https://img.shields.io/badge/platform-linux-pink.svg)
 ![](https://img.shields.io/badge/license-MIT-green.svg)
 
