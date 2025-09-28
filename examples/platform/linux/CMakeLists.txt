@@ -117,6 +117,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # =======================================================================================
 #                               Build Options
 # =======================================================================================
+option(PERSEUSSDK_STACK_TRACE "Enable stack trace support in Perseus SDK" OFF)
+
 option(PERSEUS_BOOST_USE_STATIC_LIBS "Link Boost statically" ON)
 option(PERSEUS_BOOST_USE_STATIC_RUNTIME "Use static runtime (MSVC /MT)" OFF)
 
@@ -298,7 +300,16 @@ foreach(example ${EXAMPLES})
   target_compile_definitions(${example} PRIVATE SPDLOG_ACTIVE_LEVEL=${PERSEUS_SPDLOG_ACTIVE_LEVEL})
 endforeach()
 
-target_link_libraries(stack_trace PRIVATE dw elf)
+# Enable stack trace support if requested
+if (PERSEUSSDK_STACK_TRACE)
+  perseus_print("[${FULL_TAG}] Building with stack trace support")
+
+  # Link required libraries
+  target_link_libraries(stack_trace PRIVATE dw elf)
+
+  # Add compile definition for source code
+  target_compile_definitions(stack_trace PRIVATE PERSEUSSDK_ENABLE_STACK_TRACE)
+endif ()
 
 include(GNUInstallDirs)
 install(TARGETS ${EXAMPLES}
@@ -314,25 +325,28 @@ install(TARGETS ${EXAMPLES}
 perseus_newline()
 perseus_print("[${FULL_TAG}] Configuration Log Summary")
 perseus_print_fixed_header("${PROJECT_NAME} Configure Summary")
-perseus_info("Project                   : " "${PROJECT_NAME}")
-perseus_info("Version                   : " "${PROJECT_VERSION}")
-perseus_info("Build Type                : " "${CMAKE_BUILD_TYPE}")
-perseus_info("C++ Compiler              : " "${CMAKE_CXX_COMPILER} (ID: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
-perseus_info("CXX Standard              : " "${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED}, ext=${CMAKE_CXX_EXTENSIONS})")
-perseus_info("Generator                 : " "${CMAKE_GENERATOR}")
-perseus_info("System                    : " "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
-perseus_info("Install Prefix            : " "${CMAKE_INSTALL_PREFIX}")
-perseus_info("Config Path               : " "${CONFIG_PATH}")
+perseus_info("Project                    : " "${PROJECT_NAME}")
+perseus_info("Version                    : " "${PROJECT_VERSION}")
+perseus_info("Build Type                 : " "${CMAKE_BUILD_TYPE}")
+perseus_info("C++ Compiler               : " "${CMAKE_CXX_COMPILER} (ID: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
+perseus_info("CXX Standard               : " "${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED}, ext=${CMAKE_CXX_EXTENSIONS})")
+perseus_info("Generator                  : " "${CMAKE_GENERATOR}")
+perseus_info("System                     : " "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
+perseus_info("Install Prefix             : " "${CMAKE_INSTALL_PREFIX}")
+perseus_info("Config Path                : " "${CONFIG_PATH}")
+
+perseus_print_fixed_header("${PROJECT_NAME} Build Options Summary")
+perseus_info("Enable stack trace support : " "${PERSEUSSDK_STACK_TRACE}")
 
 perseus_print_fixed_header("${PROJECT_NAME} Dependencies Summary")
-perseus_info("jsoncpp Include           : " "${jsoncpp_INCLUDE_DIR}")
-perseus_info("yaml-cpp Include          : " "${yamlcpp_INCLUDE_DIR}")
-perseus_info("Boost Static Libs         : " "${Boost_USE_STATIC_LIBS}")
-perseus_info("Boost Libs                : " "${Boost_LIBRARIES}")
-perseus_info("Boost Include             : " "${Boost_INCLUDE_DIRS}")
-perseus_info("Threads                   : " "${CMAKE_THREAD_LIBS_INIT}")
-perseus_info("spdlog DIR                : " "${spdlog_DIR}")
-perseus_info("spdlog Level              : " "${PERSEUS_SPDLOG_ACTIVE_LEVEL}")
+perseus_info("jsoncpp Include            : " "${jsoncpp_INCLUDE_DIR}")
+perseus_info("yaml-cpp Include           : " "${yamlcpp_INCLUDE_DIR}")
+perseus_info("Boost Static Libs          : " "${Boost_USE_STATIC_LIBS}")
+perseus_info("Boost Libs                 : " "${Boost_LIBRARIES}")
+perseus_info("Boost Include              : " "${Boost_INCLUDE_DIRS}")
+perseus_info("Threads                    : " "${CMAKE_THREAD_LIBS_INIT}")
+perseus_info("spdlog DIR                 : " "${spdlog_DIR}")
+perseus_info("spdlog Level               : " "${PERSEUS_SPDLOG_ACTIVE_LEVEL}")
 perseus_print_fixed_header("")
 
 perseus_success("Successfully finished ${PROJECT_NAME} configuration!")

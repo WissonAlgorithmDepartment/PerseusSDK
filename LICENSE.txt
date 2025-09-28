@@ -2,14 +2,22 @@ The following portions of the Wisson’s PerseusSDK (“Software” referred to 
 A copy of the MIT license is available at https://opensource.org/licenses/MIT.
 
 .
+PerseusSDK/
 ├── 3rd_party
-│   ├── boost / ...
-│   ├── jsoncpp / ...
-│   ├── spdlog-1.12.0 / ...
-│   └── yaml-cpp / ...
+│   ├── aarch64
+│   │   ├── boost / ...
+│   │   ├── jsoncpp / ...
+│   │   ├── spdlog-1.12.0 / ...
+│   │   └── yaml-cpp / ...
+│   └── x86_64
+│       ├── boost / ...
+│       ├── jsoncpp / ...
+│       ├── spdlog-1.12.0 / ...
+│       └── yaml-cpp / ...
 ├── CMakeLists.txt
 ├── LICENSE.txt
 ├── README.md
+├── version.h
 ├── build / ...
 ├── cmake
 │   ├── log.cmake
@@ -29,18 +37,17 @@ A copy of the MIT license is available at https://opensource.org/licenses/MIT.
     │   │   ├── backward.hpp
     │   │   ├── log_common.hpp
     │   │   └── perseus_log.h
-    │   ├── perseuslib
-    │   │   ├── common
-    │   │   │   ├── math_utils.hpp
-    │   │   │   ├── robot_state.hpp
-    │   │   │   ├── timer_utils.hpp
-    │   │   │   └── wisson_exception.hpp
-    │   │   ├── controller
-    │   │   │   ├── controller.h
-    │   │   │   └── robot_command.hpp
-    │   │   ├── perseus_robot.h
-    │   │   └── version.h
-    │   └── version.h
+    │   └── perseuslib
+    │       ├── common
+    │       │   ├── math_utils.hpp
+    │       │   ├── robot_state.hpp
+    │       │   ├── timer_utils.hpp
+    │       │   └── wisson_exception.hpp
+    │       ├── controller
+    │       │   ├── controller.h
+    │       │   └── robot_command.hpp
+    │       ├── perseus_robot.h
+    │       └── version.h
     └── lib
         └── aarch64-linux-gnu-gcc
             └── libperseuslib.a

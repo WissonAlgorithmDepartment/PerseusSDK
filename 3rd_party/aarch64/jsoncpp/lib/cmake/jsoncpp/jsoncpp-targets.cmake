@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget jsoncpp_static jsoncpp_object)
+foreach(_expectedTarget jsoncpp_lib jsoncpp_static jsoncpp_object)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -49,6 +49,14 @@ get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 if(_IMPORT_PREFIX STREQUAL "/")
   set(_IMPORT_PREFIX "")
 endif()
+
+# Create imported target jsoncpp_lib
+add_library(jsoncpp_lib SHARED IMPORTED)
+
+set_target_properties(jsoncpp_lib PROPERTIES
+  INTERFACE_COMPILE_FEATURES "cxx_std_11;cxx_auto_type;cxx_decltype;cxx_default_function_template_args;cxx_defaulted_functions;cxx_delegating_constructors;cxx_enum_forward_declarations;cxx_explicit_conversions;cxx_extended_friend_declarations;cxx_extern_templates;cxx_final;cxx_lambdas;cxx_long_long_type;cxx_nullptr;cxx_override;cxx_range_for;cxx_raw_string_literals;cxx_right_angle_brackets;cxx_rvalue_references;cxx_static_assert;cxx_strong_enums;cxx_trailing_return_types;cxx_uniform_initialization;cxx_variadic_macros;cxx_variadic_templates"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+)
 
 # Create imported target jsoncpp_static
 add_library(jsoncpp_static STATIC IMPORTED)
