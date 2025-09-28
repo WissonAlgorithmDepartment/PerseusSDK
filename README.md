@@ -14,7 +14,7 @@ For full documentation, please contact the Wisson R&D team to obtain the complet
 
 ## Latest Release
 
-The latest release version of PSDK is 1.0.2. This version of Perseus-SDK is mainly intended to support secondary development and customization for the Jxxxxx Robot. Please refer to the release notes for detailed changes list.
+The latest release version of PSDK is 1.1.0. This version of Perseus-SDK is mainly intended to support secondary development and customization for the Jxxxxx Robot. Please refer to the release notes for detailed changes list.
 
 ## License
 
